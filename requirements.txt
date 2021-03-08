@@ -1,0 +1,4 @@
+typing
+jsonpath_ng
+marshmallow
+pytz

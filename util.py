@@ -15,6 +15,7 @@ from model import (
     VerifiablePresentation,
     InputDescriptorMapping,
     Issuer,
+    TypedID,
 )
 from model import (
     PresentationDefinitionSchema,
@@ -52,11 +53,11 @@ def to_requirement(sr: SubmissionRequirements, descriptors: Sequence[InputDescri
         for tmp_descriptor in descriptors:
             if contains(tmp_descriptor.group, sr._from):
                 input_descriptors.append(tmp_descriptor)
-            total_count = len(input_descriptors)
-            if total_count == 0:
-                raise Exception(
-                    f"No descriptors for from: {sr._from}"
-                )
+        total_count = len(input_descriptors)
+        if total_count == 0:
+            raise Exception(
+                f"No descriptors for from: {sr._from}"
+            )
     else:
         for tmp_sub_req in sr._from_nested:
             try:
@@ -78,33 +79,34 @@ def make_requirement(sr: Sequence[SubmissionRequirements], descriptors: Sequence
         sr=[]
     if not descriptors:
         descriptors=[]
-    if len(sr):
+    if len(sr)==0:
         requirement = Requirement(
             count=len(descriptors),
             _input_descriptors=descriptors,
         )
         return requirement
-    
     requirement = Requirement(
         count=len(sr),
         _nested_req=[],    
     )
-        
     for tmp_sub_req in sr:
         try:
             requirement._nested_req.append(to_requirement(tmp_sub_req, descriptors))
-        except Exception:
-            print(f"Error creating requirement inside to_requirement function")
+        except Exception as err:
+            print(f"Error creating requirement inside to_requirement function, {err}")
 
     return requirement
 
 def is_len_applicable(req: Requirement, val: int) -> bool:
-    if req.count > 0 and val != req.count:
-        return False
-    if req.minimum > 0 and req.minimum > val:
-        return False
-    if req.maximum > 0 and req.maximum < val:
-        return False
+    if req.count:
+        if req.count > 0 and val != req.count:
+            return False
+    if req.minimum:
+        if req.minimum > 0 and req.minimum > val:
+            return False
+    if req.maximum:
+        if req.maximum > 0 and req.maximum < val:
+            return False
     return True
 
 def contains(data: Sequence[str], e: str) -> bool:
@@ -126,13 +128,13 @@ def filter_constraints(constraints: Constraints, credentials: Sequence[Verifiabl
         
         applicable = False
         predicate = False
-
-        for tmp_field in Constraints._fields:
+        for tmp_field in constraints._fields:
             applicable = filter_by_field(tmp_field, tmp_cred)
             if tmp_field.predicate and tmp_field.predicate:
                 if tmp_field.predicate == "required":
                     predicate = True
-            
+            if applicable:
+                break
         if not applicable:
             continue
 
@@ -147,11 +149,12 @@ def filter_by_field(field: Field, credential: VerifiableCredential) -> bool:
     for tmp_path in field.path:
         tmp_jsonpath = parse(tmp_path)
         # match = tmp_jsonpath.find(credential.serialize())
-        match = tmp_jsonpath.find(VerifiableCredentialSchema().dump(credential))
+        match = tmp_jsonpath.find(credential.provided_cred_json)
         if len(match) == 0:
             continue
-        if validate_patch(match.value, field._filter):
-            return True
+        for match_item in match:
+            if validate_patch(match_item.value, field._filter):
+                return True
     return False
             
 def validate_patch(to_check: any, _filter: Filter) -> bool:
@@ -448,11 +451,11 @@ def get_tmp_id(id: str) -> str:
     return id + "tmp_unique_id_" + str(uuid.uuid4())
 
 def trim_tmp_id(id: str) -> str:
-    tmp_index = id.index("tmp_unique_id_")
-    if tmp_index == -1:
-        return id
-    else:
+    try: 
+        tmp_index = id.index("tmp_unique_id_")
         return id[:tmp_index]
+    except ValueError:
+        return id
 
 def merge_nested_results(nested_result: Sequence[dict], exclude: dict) -> dict:
     result = {}
@@ -462,10 +465,11 @@ def merge_nested_results(nested_result: Sequence[dict], exclude: dict) -> dict:
             tmp_dict = {}
             merged_credentials = []
             
-            for tmp_cred in result[key]:
-                if tmp_cred._id not in tmp_dict:
-                    merged_credentials.append(tmp_cred)
-                    tmp_dict[tmp_cred._id] = {}
+            if key in result:
+                for tmp_cred in result[key]:
+                    if tmp_cred._id not in tmp_dict:
+                        merged_credentials.append(tmp_cred)
+                        tmp_dict[tmp_cred._id] = {}
 
             for tmp_cred in credentials:
                 if tmp_cred._id not in tmp_dict:
@@ -517,7 +521,7 @@ def merge(dict_descriptor_creds: dict) -> (Sequence[VerifiableCredential], Seque
     descriptors = []
     sorted_desc_keys = sorted(list(dict_descriptor_creds.keys()))
     for desc_id in sorted_desc_keys:
-        credentials = dict_descriptor_creds.get("desc_id")
+        credentials = dict_descriptor_creds.get(desc_id)
         for tmp_cred in credentials:
             if tmp_cred._id not in dict_of_creds:
                 result.append(tmp_cred)
@@ -546,6 +550,7 @@ def to_vc(cred: dict) -> VerifiableCredential:
     refresh_service_list = []
     terms_of_service_list = []
     evidence_list = []
+    schema_list = []
     if cred.get("proof"):
         if type(cred.get("proof")) is not list:
             proof_list.append(cred.get("proof"))
@@ -566,6 +571,14 @@ def to_vc(cred: dict) -> VerifiableCredential:
             evidence_list.append(cred.get("evidence"))
         else:
             evidence_list = cred.get("evidence")
+    if cred.get("credentialSchema"):
+        tmp_schema_list = []
+        if type(cred.get("credentialSchema")) is not list:
+            tmp_schema_list.append(cred.get("credentialSchema"))
+        else:
+            tmp_schema_list = cred.get("credentialSchema")
+        for tmp_schema in tmp_schema_list:
+            schema_list.append(TypedID(_id=tmp_schema.get("id"), _type=tmp_schema.get("type")))
 
     if len(proof_list) == 0:
         proof_list = None
@@ -575,6 +588,8 @@ def to_vc(cred: dict) -> VerifiableCredential:
         terms_of_service_list = None
     if len(evidence_list) == 0:
         evidence_list = None        
+    if len(schema_list) == 0:
+        schema_list = None
 
     return VerifiableCredential(
         _id=cred.get("id"),
@@ -586,10 +601,11 @@ def to_vc(cred: dict) -> VerifiableCredential:
         proofs=proof_list,
         evidence=evidence_list,
         status=cred.get("credentialStatus"),
-        schemas=cred.get("credentialSchema"),
+        schemas=schema_list,
         terms_of_use=terms_of_service_list,
         refresh_service=refresh_service_list,
         issuer=Issuer(_id=cred.get("issuer")),
+        provided_cred_json=cred,
     )
 
 def to_vp_json(vp: VerifiablePresentation) -> str:
@@ -623,17 +639,15 @@ def to_sr(sub_req: dict, nested_req: Sequence[SubmissionRequirements]=None) -> S
 
 def to_input_desc(descriptor: dict) -> InputDescriptors:
     constraint = None
-    group = None
     schema_list = []
     if descriptor.get("schema"):
         schema_list = to_input_desc_schema(descriptor)
     if descriptor.get("constraints"):
         constraint = to_constraint(descriptor.get("constraints"))
-    if descriptor.get("group"):
-        group = descriptor.get("group")[0]
+    
     return InputDescriptors(
         _id=descriptor.get("id"),
-        group=group,
+        group=descriptor.get("group"),
         name=descriptor.get("name"),
         purpose=descriptor.get("purpose"),
         constraint=constraint,
@@ -716,6 +730,7 @@ def to_constraint(tmp_constraint: dict) -> Constraints:
         holder=holder_list,
         _fields=field_list,
     )
+    return constraint
 
 def to_input_desc_schema(descriptor_dict: dict) -> Sequence[SchemaInputDescriptor]:
     extracted_schema_list = []

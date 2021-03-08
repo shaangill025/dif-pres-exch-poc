@@ -429,7 +429,7 @@ class InputDescriptors(object):
         self,
         *,
         _id: str = None,
-        group: str = None,
+        group: Sequence[str] = None,
         name: str = None,
         purpose: str = None,
         metadata: dict = None,
@@ -646,10 +646,12 @@ class TypedIDSchema(Schema):
         description="ID",
         required=False,
         **UUID4,
+        data_key="id",
     )
     _type = fields.Str(
         description="Type",
         required=False,
+        data_key="type",
     )
     custom_field = fields.Dict(
         description="CustomField",
@@ -687,6 +689,7 @@ class IssuerSchema(Schema):
     _id = fields.Str(
         description="ID",
         required=False,
+        data_key="id",
     )
     custom_field = fields.Dict(
         description="CustomField",
@@ -720,6 +723,7 @@ class VerifiableCredential(object):
         terms_of_use: Sequence[TypedID] = None,
         refresh_service: Sequence[TypedID] = None,
         issuer: Issuer = None,
+        provided_cred_json: dict = None
     ):
         """Initialize VerifiableCredential."""
         self._id = _id
@@ -737,6 +741,7 @@ class VerifiableCredential(object):
         self.terms_of_use = terms_of_use
         self.refresh_service = refresh_service
         self.issuer = issuer
+        self.provided_cred_json = provided_cred_json
 
 
 class VerifiableCredentialSchema(Schema):
@@ -751,6 +756,7 @@ class VerifiableCredentialSchema(Schema):
         description="ID",
         required=False,
         **UUID4,
+        data_key="id",
     )
     context = fields.List(
         fields.Str(
@@ -770,26 +776,31 @@ class VerifiableCredentialSchema(Schema):
             description="Type",
             required=False
         ),
+        data_key="type",
     )
     subject = fields.Dict(
         description="Subject",
-        required=False
+        required=False,
+        data_key="credentialSubject",
     )
     issued = fields.Str(
         required=False,
         description="Issued",
         **INDY_ISO8601_DATETIME,
+        data_key="issuanceDate",
     )
     expired = fields.Str(
         required=False,
         description="Expired",
         **INDY_ISO8601_DATETIME,
+        data_key="expirationDate",
     )
     proofs = fields.List(
         fields.Dict(
             description="Proof",
             required=False
         ),
+        data_key="proof",
     )
     custom_field = fields.Dict(
         description="CustomField",
@@ -799,11 +810,13 @@ class VerifiableCredentialSchema(Schema):
         fields.Dict(
             description="Evidence",
             required=False
-        )
+        ),
+        data_key="evidence",
     )
     status = fields.Nested(TypedIDSchema)
     schemas = fields.List(
-        fields.Nested(TypedIDSchema)
+        fields.Nested(TypedIDSchema),
+        data_key="credentialSchema",
     )
     terms_of_use = fields.List(
         fields.Nested(TypedIDSchema)
@@ -811,7 +824,8 @@ class VerifiableCredentialSchema(Schema):
     refresh_service = fields.List(
         fields.Nested(TypedIDSchema)
     )
-    issuer = fields.Nested(IssuerSchema)
+    issuer = fields.Nested(IssuerSchema, data_key="issuer")
+    provided_cred_json = fields.Dict(required=False)
 
 
 class InputDescriptorMapping(object):

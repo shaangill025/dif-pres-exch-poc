@@ -25,6 +25,10 @@ cred_json_1 = """
       }]
     }
   },
+  "credentialSchema": {
+    "id": "hub://did:foo:123/Collections/schema.us.gov/passport.json",
+    "type": "JsonSchemaValidator2018"
+  },
   "proof": {
     "type": "RsaSignature2018",
     "created": "2017-06-18T21:19:10Z",
@@ -58,6 +62,10 @@ cred_json_2 = """
       }]
     }
   },
+  "credentialSchema": {
+    "id": "https://example.org/examples/degree.json",
+    "type": "JsonSchemaValidator2018"
+  },
   "proof": {
     "type": "RsaSignature2018",
     "created": "2017-06-18T21:19:10Z",
@@ -90,6 +98,10 @@ cred_json_3 = """
         "lang": "fr"
       }]
     }
+  },
+  "credentialSchema": {
+    "id": "https://eu.com/claims/DriversLicense.json",
+    "type": "JsonSchemaValidator2018"
   },
   "proof": {
     "type": "RsaSignature2018",
@@ -201,7 +213,7 @@ pres_exch_2 = """
             "purpose":"The claim must be from one of the specified issuers",
             "filter":{
               "type":"string",
-              "pattern":"did:example:gov1|did:example:gov2"
+              "pattern":"did:example:gov1|did:example:gov2|https://example.edu/issuers/565049"
             }
           },
           {
@@ -486,6 +498,6 @@ pres_exch_3 = """
 }
 """
 
-pd_dict_list.append(json.loads(pres_exch_1))
+# pd_dict_list.append(json.loads(pres_exch_1))
 pd_dict_list.append(json.loads(pres_exch_2))
-pd_dict_list.append(json.loads(pres_exch_3))
+# pd_dict_list.append(json.loads(pres_exch_3))
