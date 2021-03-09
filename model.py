@@ -135,6 +135,14 @@ class ClaimFormatSchema(Schema):
     def make_object(self, data, **kwargs):
         return ClaimFormat(**data)
 
+    @post_dump
+    def remove_null_values(self, data, **kwargs):
+        return {
+            key: value for key, value in data.items()
+            if value is not None
+        }
+
+
 class SubmissionRequirements:
     """SubmissionRequirement describes input that must be submitted via a presentation submission."""
 
@@ -222,6 +230,13 @@ class SubmissionRequirementsSchema(Schema):
     def make_object(self, data, **kwargs):
         return SubmissionRequirements(**data)
 
+    @post_dump
+    def remove_null_values(self, data, **kwargs):
+        return {
+            key: value for key, value in data.items()
+            if value is not None
+        }
+
 class SchemaInputDescriptor:
     """SchemaField."""
 
@@ -263,6 +278,13 @@ class SchemaInputDescriptorSchema(Schema):
     @post_load
     def make_object(self, data, **kwargs):
         return SchemaInputDescriptor(**data)
+
+    @post_dump
+    def remove_null_values(self, data, **kwargs):
+        return {
+            key: value for key, value in data.items()
+            if value is not None
+        }
 
 class Holder:
     """Single Holder object for Constraints."""
@@ -310,6 +332,13 @@ class HolderSchema(Schema):
     @post_load
     def make_object(self, data, **kwargs):
         return Holder(**data)
+
+    @post_dump
+    def remove_null_values(self, data, **kwargs):
+        return {
+            key: value for key, value in data.items()
+            if value is not None
+        }
 
 class Filter:
     """Single Filter."""
@@ -431,6 +460,13 @@ class FilterSchema(Schema):
     def make_object(self, data, **kwargs):
         return Filter(**data)
 
+    @post_dump
+    def remove_null_values(self, data, **kwargs):
+        return {
+            key: value for key, value in data.items()
+            if value is not None
+        }
+
 class Field:
     """Single Field object for the Constraint."""
 
@@ -486,6 +522,13 @@ class FieldSchema(Schema):
     @post_load
     def make_object(self, data, **kwargs):
         return Field(**data)
+
+    @post_dump
+    def remove_null_values(self, data, **kwargs):
+        return {
+            key: value for key, value in data.items()
+            if value is not None
+        }
 
 class Constraints:
     """Single Constraints which describes InputDescriptor's Contraint field."""
@@ -610,6 +653,13 @@ class ConstraintsSchema(Schema):
     def make_object(self, data, **kwargs):
         return Constraints(**data)
 
+    @post_dump
+    def remove_null_values(self, data, **kwargs):
+        return {
+            key: value for key, value in data.items()
+            if value is not None
+        }
+
 class InputDescriptors:
     """Input Descriptors."""
 
@@ -680,6 +730,13 @@ class InputDescriptorsSchema(Schema):
     def make_object(self, data, **kwargs):
         return InputDescriptors(**data)
 
+    @post_dump
+    def remove_null_values(self, data, **kwargs):
+        return {
+            key: value for key, value in data.items()
+            if value is not None
+        }
+
 class Requirement:
     """Single Requirement generated from toRequirement function."""
 
@@ -744,6 +801,13 @@ class RequirementSchema(Schema):
     @post_load
     def make_object(self, data, **kwargs):
         return Requirement(**data)
+
+    @post_dump
+    def remove_null_values(self, data, **kwargs):
+        return {
+            key: value for key, value in data.items()
+            if value is not None
+        }
 
 
 class PresentationDefinition:
@@ -819,6 +883,13 @@ class PresentationDefinitionSchema(Schema):
     def make_object(self, data, **kwargs):
         return PresentationDefinition(**data)
 
+    @post_dump
+    def remove_null_values(self, data, **kwargs):
+        return {
+            key: value for key, value in data.items()
+            if value is not None
+        }
+
 
 class TypedID:
     """Single TypedID object for the VerifiableCredential."""
@@ -868,6 +939,12 @@ class TypedIDSchema(Schema):
     def make_object(self, data, **kwargs):
         return TypedID(**data)
 
+    @post_dump
+    def remove_null_values(self, data, **kwargs):
+        return {
+            key: value for key, value in data.items()
+            if value is not None
+        }
 
 class VerifiableCredential:
     """Single VerifiableCredential object."""
@@ -1016,6 +1093,7 @@ class VerifiableCredentialSchema(Schema):
                 tmp_list = []
                 tmp_list.append(data.get("proof"))
                 data["proof"] = tmp_list
+        data["provided_cred_json"] = data
         return data
 
     @post_dump
@@ -1027,6 +1105,13 @@ class VerifiableCredentialSchema(Schema):
     @post_load
     def make_object(self, data, **kwargs):
         return VerifiableCredential(**data)
+
+    @post_dump
+    def remove_null_values(self, data, **kwargs):
+        return {
+            key: value for key, value in data.items()
+            if value is not None
+        }
 
 
 class InputDescriptorMapping:
@@ -1079,6 +1164,13 @@ class InputDescriptorMappingSchema(Schema):
     def make_object(self, data, **kwargs):
         return InputDescriptorMapping(**data)
 
+    @post_dump
+    def remove_null_values(self, data, **kwargs):
+        return {
+            key: value for key, value in data.items()
+            if value is not None
+        }
+
 
 class PresentationSubmission:
     """Single PresentationSubmission object."""
@@ -1130,6 +1222,13 @@ class PresentationSubmissionSchema(Schema):
     @post_load
     def make_object(self, data, **kwargs):
         return PresentationSubmission(**data)
+
+    @post_dump
+    def remove_null_values(self, data, **kwargs):
+        return {
+            key: value for key, value in data.items()
+            if value is not None
+        }
 
 
 class VerifiablePresentation:
@@ -1242,5 +1341,12 @@ class VerifiablePresentationSchema(Schema):
     @post_load
     def make_object(self, data, **kwargs):
         return VerifiablePresentation(**data)
+
+    @post_dump
+    def remove_null_values(self, data, **kwargs):
+        return {
+            key: value for key, value in data.items()
+            if value is not None
+        }
 
 
