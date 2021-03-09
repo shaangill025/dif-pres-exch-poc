@@ -1093,6 +1093,11 @@ class VerifiableCredentialSchema(Schema):
                 tmp_list = []
                 tmp_list.append(data.get("proof"))
                 data["proof"] = tmp_list
+        if "@context" in data:
+            if type(data.get("@context")) is not list:
+                tmp_list = []
+                tmp_list.append(data.get("@context"))
+                data["@context"] = tmp_list
         data["provided_cred_json"] = data
         return data
 

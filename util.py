@@ -33,7 +33,7 @@ from model import (
     InputDescriptorMappingSchema,
 )
 from typing import Sequence, Optional, Any
-from dateutil.parser import parse
+from dateutil.parser import parse as dateutil_parser
 import pytz
 import uuid
 import json
@@ -223,8 +223,8 @@ def exclusive_minimum_check(val: any, _filter: Filter) -> bool:
         if _filter._format:
             utc=pytz.UTC
             if _filter._format=="date" or _filter._format=="date-time":
-                tmp_date = parse(str(_filter.exclusive_min)).replace(tzinfo=utc)
-                val = parse(str(val)).replace(tzinfo=utc)
+                tmp_date = dateutil_parser(str(_filter.exclusive_min)).replace(tzinfo=utc)
+                val = dateutil_parser(str(val)).replace(tzinfo=utc)
                 return val > tmp_date
         elif _filter._type=="number":
             if type(val) is str:
@@ -241,15 +241,15 @@ def exclusive_maximum_check(val: any, _filter: Filter) -> bool:
         if _filter._format:
             utc=pytz.UTC
             if _filter._format=="date" or _filter._format=="date-time":
-                tmp_date = parse(str(_filter.exclusive_min)).replace(tzinfo=utc)
-                val = parse(str(val)).replace(tzinfo=utc)
+                tmp_date = dateutil_parser(str(_filter.exclusive_max)).replace(tzinfo=utc)
+                val = dateutil_parser(str(val)).replace(tzinfo=utc)
                 return val < tmp_date
         elif _filter._type=="number":
             if type(val) is str:
                 if val.isnumeric():
-                    return float(val) < int(_filter.exclusive_min)
+                    return float(val) < int(_filter.exclusive_max)
             else:
-                return val < int(_filter.exclusive_min)
+                return val < int(_filter.exclusive_max)
         return False
     except ValueError:
         return False
@@ -259,15 +259,15 @@ def maximum_check(val: any, _filter: Filter) -> bool:
         if _filter._format:
             utc=pytz.UTC
             if _filter._format=="date" or _filter._format=="date-time":
-                tmp_date = parse(str(_filter.exclusive_min)).replace(tzinfo=utc)
-                val = parse(str(val)).replace(tzinfo=utc)
+                tmp_date = dateutil_parser(str(_filter.maximum)).replace(tzinfo=utc)
+                val = dateutil_parser(str(val)).replace(tzinfo=utc)
                 return val <= tmp_date
         elif _filter._type=="number":
             if type(val) is str:
                 if val.isnumeric():
-                    return float(val) <= int(_filter.exclusive_min)
+                    return float(val) <= int(_filter.maximum)
             else:
-                return val <= int(_filter.exclusive_min)
+                return val <= int(_filter.maximum)
         return False
     except ValueError:
         return False
@@ -277,15 +277,15 @@ def minimum_check(val: any, _filter: Filter) -> bool:
         if _filter._format:
             utc=pytz.UTC
             if _filter._format=="date" or _filter._format=="date-time":
-                tmp_date = parse(str(_filter.exclusive_min)).replace(tzinfo=utc)
-                val = parse(str(val)).replace(tzinfo=utc)
+                tmp_date = dateutil_parser(str(_filter.minimum)).replace(tzinfo=utc)
+                val = dateutil_parser(str(val)).replace(tzinfo=utc)
                 return val >= tmp_date
         elif _filter._type=="number":
             if type(val) is str:
                 if val.isnumeric():
-                    return float(val) >= int(_filter.exclusive_min)
+                    return float(val) >= int(_filter.minimum)
             else:
-                return val >= int(_filter.exclusive_min)
+                return val >= int(_filter.minimum)
         return False
     except ValueError:
         return False

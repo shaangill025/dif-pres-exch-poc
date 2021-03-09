@@ -112,9 +112,89 @@ cred_json_3 = """
   }
 }
 """
+cred_json_4 = """
+    {
+      "vc": {
+        "@context": "https://www.w3.org/2018/credentials/v1",
+        "id": "https://eu.com/claims/DriversLicense",
+        "type": ["EUDriversLicense"],
+        "issuer": "did:example:123",
+        "issuanceDate": "2010-01-01T19:73:24Z",
+        "credentialSubject": {
+          "id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
+          "accounts": [
+            {
+              "id": "1234567890",
+              "route": "DE-9876543210"
+            },
+            {
+              "id": "2457913570",
+              "route": "DE-0753197542"
+            }
+          ]
+        }
+      }
+    }
+"""
+
+cred_json_5 = """
+    {
+      "@context": "https://www.w3.org/2018/credentials/v1",
+      "id": "https://business-standards.org/schemas/employment-history.json",
+      "type": ["VerifiableCredential", "GenericEmploymentCredential"],
+      "issuer": "did:foo:123",
+      "issuanceDate": "2010-01-01T19:73:24Z",
+      "credentialSubject": {
+        "id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
+        "dob": "07/13/80"
+      },
+      "credentialSchema": {
+        "id": "https://eu.com/claims/DriversLicense.json",
+        "type": "JsonSchemaValidator2018"
+      },
+      "proof": {
+        "type": "EcdsaSecp256k1VerificationKey2019",
+        "created": "2017-06-18T21:19:10Z",
+        "proofPurpose": "assertionMethod",
+        "verificationMethod": "https://example.edu/issuers/keys/1",
+        "jws": "..."
+      }
+    }
+"""
+cred_json_6 = """
+    {
+      "@context": "https://www.w3.org/2018/credentials/v1",
+      "id": "https://eu.com/claims/DriversLicense",
+      "type": ["EUDriversLicense"],
+      "issuer": "did:foo:123",
+      "issuanceDate": "2010-01-01T19:73:24Z",
+      "credentialSubject": {
+        "id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
+        "license": {
+          "number": "34DGE352",
+          "dob": "07/13/80"
+        }
+      },
+      "credentialSchema": {
+        "id": "https://eu.com/claims/DriversLicense.json",
+        "type": "JsonSchemaValidator2018"
+      },
+      "proof": {
+        "type": "RsaSignature2018",
+        "created": "2017-06-18T21:19:10Z",
+        "proofPurpose": "assertionMethod",
+        "verificationMethod": "https://example.edu/issuers/keys/1",
+        "jws": "..."
+      }
+    }
+"""
+
 vc_dict_list.append(json.loads(cred_json_1))
 vc_dict_list.append(json.loads(cred_json_2))
 vc_dict_list.append(json.loads(cred_json_3))
+vc_dict_list.append(json.loads(cred_json_4))
+vc_dict_list.append(json.loads(cred_json_5))
+vc_dict_list.append(json.loads(cred_json_6))
 
 
 pd_dict_list = []
