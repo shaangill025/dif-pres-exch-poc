@@ -9,6 +9,18 @@ from valid import (
 )
 from typing import Sequence, Union
 
+class BaseSchema(Schema):
+    @post_load
+    def make_object(self, data, **kwargs):
+        return type(self).Meta.model_class(**data)
+
+    @post_dump
+    def remove_null_values(self, data, **kwargs):
+        return {
+            key: value for key, value in data.items()
+            if value is not None
+        }
+
 class ClaimFormat:
     """Defines Claim field."""
 
@@ -35,7 +47,7 @@ class ClaimFormat:
         self.ldp_vc_format_data = ldp_vc_format_data
         self.ldp_vp_format_data = ldp_vp_format_data
 
-class ClaimFormatSchema(Schema):
+class ClaimFormatSchema(BaseSchema):
     """Single ClaimFormat Schema."""
 
     class Meta:
@@ -130,17 +142,6 @@ class ClaimFormatSchema(Schema):
             tmp_dict["proof_type"] = data.get("ldp_vp")
             reformat["ldp_vp"] = tmp_dict
         return reformat
-    
-    @post_load
-    def make_object(self, data, **kwargs):
-        return ClaimFormat(**data)
-
-    @post_dump
-    def remove_null_values(self, data, **kwargs):
-        return {
-            key: value for key, value in data.items()
-            if value is not None
-        }
 
 
 class SubmissionRequirements:
@@ -175,7 +176,7 @@ class SubmissionRequirements:
         self._from_nested = _from_nested
 
 
-class SubmissionRequirementsSchema(Schema):
+class SubmissionRequirementsSchema(BaseSchema):
     """Single Presentation Definition Schema."""
 
     class Meta:
@@ -226,16 +227,6 @@ class SubmissionRequirementsSchema(Schema):
         data_key="from_nested",
     )
 
-    @post_load
-    def make_object(self, data, **kwargs):
-        return SubmissionRequirements(**data)
-
-    @post_dump
-    def remove_null_values(self, data, **kwargs):
-        return {
-            key: value for key, value in data.items()
-            if value is not None
-        }
 
 class SchemaInputDescriptor:
     """SchemaField."""
@@ -256,7 +247,7 @@ class SchemaInputDescriptor:
         self.required = required
 
 
-class SchemaInputDescriptorSchema(Schema):
+class SchemaInputDescriptorSchema(BaseSchema):
     """Single SchemaField Schema."""
 
     class Meta:
@@ -275,16 +266,6 @@ class SchemaInputDescriptorSchema(Schema):
         data_key="required"
     )
 
-    @post_load
-    def make_object(self, data, **kwargs):
-        return SchemaInputDescriptor(**data)
-
-    @post_dump
-    def remove_null_values(self, data, **kwargs):
-        return {
-            key: value for key, value in data.items()
-            if value is not None
-        }
 
 class Holder:
     """Single Holder object for Constraints."""
@@ -305,7 +286,7 @@ class Holder:
         self.directive = directive
 
 
-class HolderSchema(Schema):
+class HolderSchema(BaseSchema):
     """Single Holder Schema."""
 
     class Meta:
@@ -329,16 +310,6 @@ class HolderSchema(Schema):
         data_key="directive",
     )
 
-    @post_load
-    def make_object(self, data, **kwargs):
-        return Holder(**data)
-
-    @post_dump
-    def remove_null_values(self, data, **kwargs):
-        return {
-            key: value for key, value in data.items()
-            if value is not None
-        }
 
 class Filter:
     """Single Filter."""
@@ -379,7 +350,7 @@ class Filter:
         self._not = _not
 
 
-class FilterSchema(Schema):
+class FilterSchema(BaseSchema):
     """Single Presentation Definition Schema."""
 
     class Meta:
@@ -455,17 +426,7 @@ class FilterSchema(Schema):
         example=False,
         data_key="not",
     )
-    
-    @post_load
-    def make_object(self, data, **kwargs):
-        return Filter(**data)
 
-    @post_dump
-    def remove_null_values(self, data, **kwargs):
-        return {
-            key: value for key, value in data.items()
-            if value is not None
-        }
 
 class Field:
     """Single Field object for the Constraint."""
@@ -490,7 +451,7 @@ class Field:
         self._filter = _filter
 
 
-class FieldSchema(Schema):
+class FieldSchema(BaseSchema):
     """Single Field Schema."""
 
     class Meta:
@@ -519,16 +480,6 @@ class FieldSchema(Schema):
     )
     _filter = fields.Nested(FilterSchema, data_key="filter")
 
-    @post_load
-    def make_object(self, data, **kwargs):
-        return Field(**data)
-
-    @post_dump
-    def remove_null_values(self, data, **kwargs):
-        return {
-            key: value for key, value in data.items()
-            if value is not None
-        }
 
 class Constraints:
     """Single Constraints which describes InputDescriptor's Contraint field."""
@@ -559,7 +510,7 @@ class Constraints:
         self.status_revoked = status_revoked
 
 
-class ConstraintsSchema(Schema):
+class ConstraintsSchema(BaseSchema):
     """Single Constraints Schema."""
 
     class Meta:
@@ -649,16 +600,6 @@ class ConstraintsSchema(Schema):
             del data["status_revoked"]
         return data
 
-    @post_load
-    def make_object(self, data, **kwargs):
-        return Constraints(**data)
-
-    @post_dump
-    def remove_null_values(self, data, **kwargs):
-        return {
-            key: value for key, value in data.items()
-            if value is not None
-        }
 
 class InputDescriptors:
     """Input Descriptors."""
@@ -689,7 +630,7 @@ class InputDescriptors:
         self._schema = _schema
 
 
-class InputDescriptorsSchema(Schema):
+class InputDescriptorsSchema(BaseSchema):
     """Single InputDescriptors Schema."""
 
     class Meta:
@@ -726,16 +667,6 @@ class InputDescriptorsSchema(Schema):
         data_key="schema"
     )
 
-    @post_load
-    def make_object(self, data, **kwargs):
-        return InputDescriptors(**data)
-
-    @post_dump
-    def remove_null_values(self, data, **kwargs):
-        return {
-            key: value for key, value in data.items()
-            if value is not None
-        }
 
 class Requirement:
     """Single Requirement generated from toRequirement function."""
@@ -762,7 +693,7 @@ class Requirement:
         self._nested_req = _nested_req
 
 
-class RequirementSchema(Schema):
+class RequirementSchema(BaseSchema):
     """Single Requirement Schema."""
 
     class Meta:
@@ -798,17 +729,6 @@ class RequirementSchema(Schema):
         required=False,
     )
 
-    @post_load
-    def make_object(self, data, **kwargs):
-        return Requirement(**data)
-
-    @post_dump
-    def remove_null_values(self, data, **kwargs):
-        return {
-            key: value for key, value in data.items()
-            if value is not None
-        }
-
 
 class PresentationDefinition:
     """Single PresentationDefinition (https://identity.foundation/presentation-exchange/)"""
@@ -839,7 +759,7 @@ class PresentationDefinition:
         self.input_descriptors = input_descriptors
 
 
-class PresentationDefinitionSchema(Schema):
+class PresentationDefinitionSchema(BaseSchema):
     """Single Presentation Definition Schema."""
 
     class Meta:
@@ -879,18 +799,6 @@ class PresentationDefinitionSchema(Schema):
     )
 
 
-    @post_load
-    def make_object(self, data, **kwargs):
-        return PresentationDefinition(**data)
-
-    @post_dump
-    def remove_null_values(self, data, **kwargs):
-        return {
-            key: value for key, value in data.items()
-            if value is not None
-        }
-
-
 class TypedID:
     """Single TypedID object for the VerifiableCredential."""
 
@@ -912,7 +820,7 @@ class TypedID:
         self.custom_field = custom_field
 
 
-class TypedIDSchema(Schema):
+class TypedIDSchema(BaseSchema):
     """Single TypedID Schema."""
 
     class Meta:
@@ -935,16 +843,6 @@ class TypedIDSchema(Schema):
         required=False
     )
 
-    @post_load
-    def make_object(self, data, **kwargs):
-        return TypedID(**data)
-
-    @post_dump
-    def remove_null_values(self, data, **kwargs):
-        return {
-            key: value for key, value in data.items()
-            if value is not None
-        }
 
 class VerifiableCredential:
     """Single VerifiableCredential object."""
@@ -993,7 +891,7 @@ class VerifiableCredential:
         self.provided_cred_json = provided_cred_json
 
 
-class VerifiableCredentialSchema(Schema):
+class VerifiableCredentialSchema(BaseSchema):
     """Single VerifiableCredential Schema."""
 
     class Meta:
@@ -1107,17 +1005,6 @@ class VerifiableCredentialSchema(Schema):
             del data["provided_cred_json"]
         return data
 
-    @post_load
-    def make_object(self, data, **kwargs):
-        return VerifiableCredential(**data)
-
-    @post_dump
-    def remove_null_values(self, data, **kwargs):
-        return {
-            key: value for key, value in data.items()
-            if value is not None
-        }
-
 
 class InputDescriptorMapping:
     """Single InputDescriptorMapping object."""
@@ -1140,7 +1027,7 @@ class InputDescriptorMapping:
         self.path = path
 
 
-class InputDescriptorMappingSchema(Schema):
+class InputDescriptorMappingSchema(BaseSchema):
     """Single InputDescriptorMapping Schema."""
 
     class Meta:
@@ -1165,17 +1052,6 @@ class InputDescriptorMappingSchema(Schema):
         data_key="path",
     )
 
-    @post_load
-    def make_object(self, data, **kwargs):
-        return InputDescriptorMapping(**data)
-
-    @post_dump
-    def remove_null_values(self, data, **kwargs):
-        return {
-            key: value for key, value in data.items()
-            if value is not None
-        }
-
 
 class PresentationSubmission:
     """Single PresentationSubmission object."""
@@ -1198,7 +1074,7 @@ class PresentationSubmission:
         self.descriptor_map = descriptor_map
 
 
-class PresentationSubmissionSchema(Schema):
+class PresentationSubmissionSchema(BaseSchema):
     """Single PresentationSubmission Schema."""
 
     class Meta:
@@ -1223,17 +1099,6 @@ class PresentationSubmissionSchema(Schema):
         required=False,
         data_key="descriptor_map",
     )
-
-    @post_load
-    def make_object(self, data, **kwargs):
-        return PresentationSubmission(**data)
-
-    @post_dump
-    def remove_null_values(self, data, **kwargs):
-        return {
-            key: value for key, value in data.items()
-            if value is not None
-        }
 
 
 class VerifiablePresentation:
@@ -1269,7 +1134,7 @@ class VerifiablePresentation:
         self.presentation_submission = presentation_submission
 
 
-class VerifiablePresentationSchema(Schema):
+class VerifiablePresentationSchema(BaseSchema):
     """Single Field Schema."""
 
     class Meta:
@@ -1342,16 +1207,3 @@ class VerifiablePresentationSchema(Schema):
         if "id" in data:
             del data["id"]
         return data
-
-    @post_load
-    def make_object(self, data, **kwargs):
-        return VerifiablePresentation(**data)
-
-    @post_dump
-    def remove_null_values(self, data, **kwargs):
-        return {
-            key: value for key, value in data.items()
-            if value is not None
-        }
-
-
