@@ -122,6 +122,31 @@ pd_dict_list = []
 pres_exch_1 = """
 {
   "id":"32f54163-7166-48f1-93d8-ff217bdb0653",
+  "format": {
+    "jwt": {
+      "alg": ["EdDSA", "ES256K", "ES384"]
+    },
+    "jwt_vc": {
+      "alg": ["ES256K", "ES384"]
+    },
+    "jwt_vp": {
+      "alg": ["EdDSA", "ES256K"]
+    },
+    "ldp_vc": {
+      "proof_type": [
+        "JsonWebSignature2020",
+        "Ed25519Signature2018",
+        "EcdsaSecp256k1Signature2019",
+        "RsaSignature2018"
+      ]
+    },
+    "ldp_vp": {
+      "proof_type": ["Ed25519Signature2018"]
+    },
+    "ldp": {
+      "proof_type": ["RsaSignature2018"]
+    }
+  },
   "input_descriptors":[
     {
       "id":"banking_input",
