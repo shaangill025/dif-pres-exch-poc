@@ -1214,7 +1214,7 @@ class PresentationSubmissionSchema(Schema):
         data_key="definition_id",
     )
     descriptor_map = fields.List(
-        fields.Nested(InputDescriptorMapping),
+        fields.Nested(InputDescriptorMappingSchema),
         required=False,
         data_key="descriptor_map",
     )

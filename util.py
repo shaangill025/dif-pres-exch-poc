@@ -15,6 +15,7 @@ from model import (
     VerifiablePresentation,
     InputDescriptorMapping,
     TypedID,
+    PresentationSubmission
 )
 from model import (
     PresentationDefinitionSchema,
@@ -488,11 +489,12 @@ def create_vp(credentials: Sequence[VerifiableCredential], pd: PresentationDefin
         # applicable_cred_dict.append(tmp_cred.serialize())
         applicable_cred_dict.append(VerifiableCredentialSchema().dump(tmp_cred))
     # submission_property
-    submission_property = {
-        "id": str(uuid.uuid4()),
-        "definition_id": pd._id,
-        "descriptor_map": descriptor_map, 
-    }
+    submission_property = PresentationSubmission(
+        _id=str(uuid.uuid4()),
+        definition_id=pd._id,
+        descriptor_map=descriptor_map
+    )
+
     # defaultVPContext
     default_vp_context = [
         "https://www.w3.org/2018/credentials/v1",
@@ -509,7 +511,7 @@ def create_vp(credentials: Sequence[VerifiableCredential], pd: PresentationDefin
         context=default_vp_context,
         _types=default_vp_type,
         credentials=applicable_cred_dict,
-        custom_field=submission_property,
+        presentation_submission=submission_property,
     )
     return vp
 
@@ -526,7 +528,7 @@ def merge(dict_descriptor_creds: dict) -> (Sequence[VerifiableCredential], Seque
                 result.append(tmp_cred)
                 dict_of_creds[trim_tmp_id(tmp_cred._id)] = len(descriptors)
 
-            if f"{tmp_cred._id}-{tmp_cred._id}" in dict_of_descriptors:
+            if f"{tmp_cred._id}-{tmp_cred._id}" not in dict_of_descriptors:
                 descriptor_map = InputDescriptorMapping(_id=desc_id,_format="ldp_vp", path=f"$.verifiableCredential[{dict_of_creds[tmp_cred._id]}]")
                 descriptors.append(descriptor_map)
 
