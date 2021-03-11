@@ -209,16 +209,23 @@ pres_exch = """
   "id":"32f54163-7166-48f1-93d8-ff217bdb0653",
   "submission_requirements":[
     {
-      "name": "United States Citizenship Proofs",
-      "purpose": "We need you to prove you are a US citizen.",
-      "rule": "all",
-      "from": "A"
-    },
-    {
-      "name": "European Union Citizenship Proofs",
-      "purpose": "We need you to prove you are a citizen of a EU country.",
-      "rule": "all",
-      "from": "B"
+      "name": "Citizenship Information",
+      "rule": "pick",
+      "count": 1,
+      "from_nested": [
+        {
+          "name": "United States Citizenship Proofs",
+          "purpose": "We need you to prove you are a US citizen.",
+          "rule": "all",
+          "from": "A"
+        },
+        {
+          "name": "European Union Citizenship Proofs",
+          "purpose": "We need you to prove you are a citizen of a EU country.",
+          "rule": "all",
+          "from": "B"
+        }
+      ]
     }
   ],
   "input_descriptors":[
