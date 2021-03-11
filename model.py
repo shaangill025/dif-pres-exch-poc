@@ -8,6 +8,9 @@ from valid import (
     INDY_ISO8601_DATETIME,
 )
 from typing import Sequence, Union
+from uuid import uuid4
+import json
+
 
 class BaseSchema(Schema):
     @post_load
@@ -163,7 +166,7 @@ class SubmissionRequirements:
         maximum: int = None,
         _from: str = None,
         # Self_reference
-        _from_nested: Sequence = None,
+        from_nested: Sequence = None,
     ):
         """Initialize SubmissionRequirement."""
         self._name = _name
@@ -173,7 +176,7 @@ class SubmissionRequirements:
         self.minimum = minimum
         self.maximum = maximum
         self._from = _from
-        self._from_nested = _from_nested
+        self.from_nested = from_nested
 
 
 class SubmissionRequirementsSchema(BaseSchema):
@@ -221,11 +224,19 @@ class SubmissionRequirementsSchema(BaseSchema):
         description="From", required=False, data_key="from"
     )
     # Self References
-    _from_nested = fields.List(
-        fields.Nested(lambda: SubmissionRequirementsSchema(exclude=("_from_nested",))),
+    from_nested = fields.List(
+        fields.Nested(lambda: SubmissionRequirementsSchema(exclude=("from_nested",))),
         required=False,
         data_key="from_nested",
     )
+
+    @pre_load
+    def validate_from(self, data, **kwargs):
+        if "from" in data and "from_nested" in data:
+            raise ValidationError("Both from and from_nested cannot be specified in the submission requirement")
+        if "from" not in data and "from_nested" not in data:
+            raise ValidationError("Either from or from_nested needs to be specified in the submission requirement") 
+        return data
 
 
 class SchemaInputDescriptor:
@@ -278,11 +289,11 @@ class Holder:
     def __init__(
         self,
         *,
-        _field_id: Sequence[str] = None,
+        field_ids: Sequence[str] = None,
         directive: str = None,
     ):
         """Initialize Holder."""
-        self._field_id = _field_id
+        self.field_ids = field_ids
         self.directive = directive
 
 
@@ -294,7 +305,7 @@ class HolderSchema(BaseSchema):
         model_class = Holder
         unknown = EXCLUDE
 
-    _field_id = fields.List(
+    field_ids = fields.List(
         fields.Str(
             description="FieldID",
             required=False,
@@ -324,7 +335,7 @@ class Filter:
         *,
         _not: bool = False,
         _type: str = None,
-        _format: str = None,
+        fmt: str = None,
         pattern: str = None,
         minimum: str = None,
         maximum: str = None,
@@ -333,11 +344,11 @@ class Filter:
         exclusive_min: str = None,
         exclusive_max: str = None,
         const: str = None,
-        _enum: Sequence[str] = None,
+        enums: Sequence[str] = None,
     ):
         """Initialize Filter."""
         self._type = _type
-        self._format = _format
+        self.fmt = fmt
         self.pattern = pattern
         self.minimum = minimum
         self.maximum = maximum
@@ -346,7 +357,7 @@ class Filter:
         self.exclusive_min = exclusive_min
         self.exclusive_max = exclusive_max
         self.const = const
-        self._enum = _enum
+        self.enums = enums
         self._not = _not
 
 
@@ -363,7 +374,7 @@ class FilterSchema(BaseSchema):
         required=False,
         data_key="type"
     )
-    _format = fields.Str(
+    fmt = fields.Str(
         description="Format",
         required=False,
         data_key="format",
@@ -412,7 +423,7 @@ class FilterSchema(BaseSchema):
         required=False,
         data_key="const",
     )
-    _enum = fields.List(
+    enums = fields.List(
         fields.Str(
             description="Enum, can be str or int",
             required=False
@@ -427,6 +438,16 @@ class FilterSchema(BaseSchema):
         data_key="not",
     )
 
+    @pre_load
+    def extract_info(self, data, **kwargs):
+        reformat = {}
+        if "not" in data:
+            reformat["not"] = True
+            for key, value in data.get("not").items():
+                reformat[key] = value
+            data=reformat
+        return data
+
 
 class Field:
     """Single Field object for the Constraint."""
@@ -439,13 +460,13 @@ class Field:
     def __init__(
         self,
         *,
-        path: Sequence[str] = None,
+        paths: Sequence[str] = None,
         purpose: str = None,
         predicate: str = None,
         _filter: Filter = None,
     ):
         """Initialize Field."""
-        self.path = path
+        self.paths = paths
         self.purpose = purpose
         self.predicate = predicate
         self._filter = _filter
@@ -459,7 +480,7 @@ class FieldSchema(BaseSchema):
         model_class = Field
         unknown = EXCLUDE
 
-    path = fields.List(
+    paths = fields.List(
         fields.Str(
             description="Path",
             required=False
@@ -494,7 +515,7 @@ class Constraints:
         *,
         subject_issuer: str = None,
         limit_disclosure: bool = None,
-        holder: Sequence[Holder] = None,
+        holders: Sequence[Holder] = None,
         _fields: Sequence[Field] = None,
         status_active: str = None,
         status_suspended: str = None,
@@ -503,7 +524,7 @@ class Constraints:
         """Initialize Constraints for Input Descriptor."""
         self.subject_issuer = subject_issuer
         self.limit_disclosure = limit_disclosure
-        self.holder = holder
+        self.holders = holders
         self._fields = _fields
         self.status_active = status_active
         self.status_suspended = status_suspended
@@ -529,7 +550,7 @@ class ConstraintsSchema(BaseSchema):
         required=False,
         data_key="limit_disclosure"
     )
-    holder = fields.List(
+    holders = fields.List(
         fields.Nested(HolderSchema),
         required=False,
         data_key="is_holder",
@@ -613,21 +634,21 @@ class InputDescriptors:
         self,
         *,
         _id: str = None,
-        group: Sequence[str] = None,
+        groups: Sequence[str] = None,
         name: str = None,
         purpose: str = None,
         metadata: dict = None,
         constraint: Constraints = None,
-        _schema: Sequence[SchemaInputDescriptor] = None,
+        schemas: Sequence[SchemaInputDescriptor] = None,
     ):
         """Initialize InputDescriptors."""
         self._id = _id
-        self.group = group
+        self.groups = groups
         self.name = name
         self.purpose = purpose
         self.metadata = metadata
         self.constraint = constraint
-        self._schema = _schema
+        self.schemas = schemas
 
 
 class InputDescriptorsSchema(BaseSchema):
@@ -643,7 +664,7 @@ class InputDescriptorsSchema(BaseSchema):
         required=False,
         data_key="id"
     )
-    group = fields.List(
+    groups = fields.List(
         fields.Str(
             description="Group",
             required=False,
@@ -661,7 +682,7 @@ class InputDescriptorsSchema(BaseSchema):
         description="Metadata dictionary", required=False, data_key="metadata"
     )
     constraint = fields.Nested(ConstraintsSchema, required=False, data_key="constraints")
-    _schema = fields.List(
+    schemas = fields.List(
         fields.Nested(SchemaInputDescriptorSchema),
         required=False,
         data_key="schema"
@@ -682,15 +703,15 @@ class Requirement:
         count: int = None,
         maximum: int = None,
         minimum: int = None,
-        _input_descriptors: Sequence[InputDescriptors] = None,
-        _nested_req: Sequence = None,
+        input_descriptors: Sequence[InputDescriptors] = None,
+        nested_req: Sequence = None,
     ):
         """Initialize Requirement."""
         self.count = count
         self.maximum = maximum
         self.minimum = minimum
-        self._input_descriptors = _input_descriptors
-        self._nested_req = _nested_req
+        self.input_descriptors = input_descriptors
+        self.nested_req = nested_req
 
 
 class RequirementSchema(BaseSchema):
@@ -719,12 +740,12 @@ class RequirementSchema(BaseSchema):
         strict=True,
         required=False,
     )
-    _input_descriptors = fields.List(
+    input_descriptors = fields.List(
         fields.Nested(InputDescriptorsSchema),
         required=False,
     )
     # Self References
-    _nested_req = fields.List(
+    nested_req = fields.List(
         fields.Nested(lambda: RequirementSchema(exclude=("_nested_req",))),
         required=False,
     )
@@ -798,212 +819,105 @@ class PresentationDefinitionSchema(BaseSchema):
         data_key="input_descriptors",
     )
 
-
-class TypedID:
-    """Single TypedID object for the VerifiableCredential."""
-
-    class Meta:
-        """TypedID metadata."""
-
-        schema_class = "TypedIDSchema"
+class VCRecord:
+    """Verifiable credential storage record class."""
 
     def __init__(
         self,
         *,
-        _id: str = None,
-        _type: str = None,
-        custom_field: dict = None,
+        # context is required by spec
+        contexts: Sequence[str],
+        # type is required by spec
+        types: Sequence[str],
+        # issuer ID is required by spec
+        issuer_id: str,
+        # one or more subject IDs may be present
+        subject_ids: Sequence[str],
+        # credential encoded as a string
+        value: str,
+        # value of the credential 'id' property, if any
+        given_id: str = None,
+        # array of tags for retrieval (derived from attribute values)
+        tags: dict = None,
+        # specify the storage record ID
+        record_id: str = None,
     ):
-        """Initialize TypedID."""
-        self._id = _id
-        self._type = _type
-        self.custom_field = custom_field
+        """Initialize some defaults on record."""
+        self.contexts = list(contexts) if contexts else []
+        self.types = list(types) if types else []
+        self.issuer_id = issuer_id
+        self.subject_ids = list(subject_ids) if subject_ids else []
+        self.value = value
+        self.given_id = given_id
+        self.tags = tags or {}
+        self.record_id = record_id or uuid4().hex
 
-
-class TypedIDSchema(BaseSchema):
-    """Single TypedID Schema."""
-
-    class Meta:
-
-        model_class = TypedID
-        unknown = EXCLUDE
-    
-    _id = fields.Str(
-        description="ID",
-        required=False,
-        data_key="id",
-    )
-    _type = fields.Str(
-        description="Type",
-        required=False,
-        data_key="type",
-    )
-    custom_field = fields.Dict(
-        description="CustomField",
-        required=False
-    )
-
-
-class VerifiableCredential:
-    """Single VerifiableCredential object."""
-
-    class Meta:
-        """VerifiableCredential metadata."""
-
-        schema_class = "VerifiableCredentialSchema"
-
-    def __init__(
-        self,
-        *,
-        _id: str = None,
-        context: Sequence[str] = None,
-        custom_context: Sequence[dict] = None,
-        _types: Sequence[str] = None,
-        subject: dict = None,
-        issued: str = None,
-        expired: str = None,
-        proofs: Sequence[dict] = None,
-        custom_field: dict = None,
-        evidence: Sequence[dict] = None,
-        status: TypedID = None,
-        schemas: Sequence[TypedID] = None,
-        terms_of_use: Sequence[TypedID] = None,
-        refresh_service: Sequence[TypedID] = None,
-        issuer: str = None,
-        provided_cred_json: dict = None
-    ):
-        """Initialize VerifiableCredential."""
-        self._id = _id
-        self.context = context
-        self.custom_context = custom_context
-        self._types = _types
-        self.subject = subject
-        self.issued = issued
-        self.expired = expired
-        self.proofs = proofs
-        self.custom_field = custom_field
-        self.evidence = evidence
-        self.status = status
-        self.schemas = schemas
-        self.terms_of_use = terms_of_use
-        self.refresh_service = refresh_service
-        self.issuer = issuer
-        self.provided_cred_json = provided_cred_json
-
-
-class VerifiableCredentialSchema(BaseSchema):
-    """Single VerifiableCredential Schema."""
-
-    class Meta:
-
-        model_class = VerifiableCredential
-        unknown = EXCLUDE
-
-    _id = fields.Str(
-        description="ID",
-        required=False,
-        data_key="id",
-    )
-    context = fields.List(
-        fields.Str(
-            description="Context",
-            required=False
-        ),
-        data_key="@context",
-    )
-    custom_context = fields.List(
-        fields.Dict(
-            description="CustomContext",
-            required=False
-        ),
-    )
-    _types = fields.List(
-        fields.Str(
-            description="Type",
-            required=False
-        ),
-        data_key="type",
-    )
-    subject = fields.Dict(
-        description="Subject",
-        required=False,
-        data_key="credentialSubject",
-    )
-    issued = fields.Str(
-        required=False,
-        description="Issued",
-        **INDY_ISO8601_DATETIME,
-        data_key="issuanceDate",
-    )
-    expired = fields.Str(
-        required=False,
-        description="Expired",
-        **INDY_ISO8601_DATETIME,
-        data_key="expirationDate",
-    )
-    proofs = fields.List(
-        fields.Dict(
-            description="Proof",
-            required=False
-        ),
-        data_key="proof",
-    )
-    custom_field = fields.Dict(
-        description="CustomField",
-        required=False
-    )
-    evidence = fields.List(
-        fields.Dict(
-            description="Evidence",
-            required=False
-        ),
-        data_key="evidence",
-    )
-    status = fields.Nested(TypedIDSchema, data_key="credentialStatus")
-    schemas = fields.List(
-        fields.Nested(TypedIDSchema),
-        data_key="credentialSchema",
-    )
-    terms_of_use = fields.List(
-        fields.Nested(TypedIDSchema),
-        data_key="termsOfUse",
-    )
-    refresh_service = fields.List(
-        fields.Nested(TypedIDSchema),
-        data_key="refreshService",
-    )
-    issuer = fields.Str(
-        description="Issuer",
-        required=False,
-        data_key="issuer",
-    )
-    provided_cred_json = fields.Dict(required=False)
-
-    @pre_load
-    def extract_info(self, data, **kwargs):
-        if "credentialSchema" in data:
-            if type(data.get("credentialSchema")) is not list:
-                tmp_list = []
-                tmp_list.append(data.get("credentialSchema"))
-                data["credentialSchema"] = tmp_list
-        if "proof" in data:
-            if type(data.get("proof")) is not list:
-                tmp_list = []
-                tmp_list.append(data.get("proof"))
-                data["proof"] = tmp_list
-        if "@context" in data:
-            if type(data.get("@context")) is not list:
-                tmp_list = []
-                tmp_list.append(data.get("@context"))
-                data["@context"] = tmp_list
-        data["provided_cred_json"] = data
-        return data
-
-    @post_dump
-    def reformat_data(self, data, **kwargs):
-        if "provided_cred_json" in data:
-            del data["provided_cred_json"]
-        return data
+    @classmethod
+    def deserialize(cls, cred_json: str) -> "VCRecord":
+        given_id = None
+        tags = None
+        value = ""
+        record_id = None
+        subject_ids = []
+        issuer_id = ""
+        contexts = []
+        types = []
+        cred_dict = json.loads(cred_json)
+        if "id" in cred_dict:
+            given_id = cred_dict.get("id")
+        if "@context" in cred_dict:
+            # Should not happen
+            if type(cred_dict.get("@context")) is not list:
+                if type(cred_dict.get("@context")) is str:
+                    contexts.append(cred_dict.get("@context"))
+            else:
+                for tmp_item in cred_dict.get("@context"):
+                    if type(tmp_item) is str:
+                        contexts.append(tmp_item)
+        if "issuer" in cred_dict:
+            if cred_dict.get("issuer") is dict:
+                issuer_id = cred_dict.get("issuer").get("id")
+            else:
+                issuer_id = cred_dict.get("issuer")
+        if "type" in cred_dict:
+            if type(cred_dict.get("type")) is list:
+                for tmp_item in cred_dict.get("type"):
+                    if type(tmp_item) is str:
+                        types.append(tmp_item)
+        if "credentialSubject" in cred_dict:
+            if type(cred_dict.get("credentialSubject")) is list:
+                tmp_list = cred_dict.get("credentialSubject")
+                for tmp_dict in tmp_list:
+                    subject_ids.append(tmp_dict.get("id"))
+            elif type(cred_dict.get("credentialSubject")) is dict:
+                tmp_dict = cred_dict.get("credentialSubject")
+                subject_ids.append(tmp_dict.get("id"))
+            elif type(cred_dict.get("credentialSubject")) is str:
+                subject_ids.append(tmp_dict.get("credentialSubject"))
+        if "credentialSchema" in cred_dict:
+            tags = {}
+            schema_ids = []
+            if type(cred_dict.get("credentialSchema")) is list:
+                tmp_list = cred_dict.get("credentialSchema")
+                for tmp_dict in tmp_list:
+                    schema_ids.append(tmp_dict.get("id"))
+            elif type(cred_dict.get("credentialSchema")) is dict:
+                tmp_dict = cred_dict.get("credentialSchema")
+                schema_ids.append(tmp_dict.get("id"))
+            elif type(cred_dict.get("credentialSchema")) is str:
+                schema_ids.append(tmp_dict.get("credentialSchema"))
+            tags["schema_ids"] = schema_ids
+        value = json.dumps(cred_dict)
+        return VCRecord(
+            contexts=contexts,
+            types=types,
+            issuer_id=issuer_id,
+            subject_ids=subject_ids,
+            given_id=given_id,
+            value=value,
+            tags=tags,
+            record_id=record_id,
+        )
 
 
 class InputDescriptorMapping:
@@ -1018,12 +932,12 @@ class InputDescriptorMapping:
         self,
         *,
         _id: str = None,
-        _format: str = None,
+        fmt: str = None,
         path: str = None,
     ):
         """Initialize InputDescriptorMapping."""
         self._id = _id
-        self._format = _format
+        self.fmt = fmt
         self.path = path
 
 
@@ -1040,7 +954,7 @@ class InputDescriptorMappingSchema(BaseSchema):
         required=False,
         data_key="id",
     )
-    _format = fields.Str(
+    fmt = fields.Str(
         description="Format",
         required=False,
         default="ldp_vp",
@@ -1066,12 +980,12 @@ class PresentationSubmission:
         *,
         _id: str = None,
         definition_id: str = None,
-        descriptor_map: Sequence[InputDescriptorMapping] = None,
+        descriptor_maps: Sequence[InputDescriptorMapping] = None,
     ):
         """Initialize InputDescriptorMapping."""
         self._id = _id
         self.definition_id = definition_id
-        self.descriptor_map = descriptor_map
+        self.descriptor_maps = descriptor_maps
 
 
 class PresentationSubmissionSchema(BaseSchema):
@@ -1094,11 +1008,20 @@ class PresentationSubmissionSchema(BaseSchema):
         **UUID4,
         data_key="definition_id",
     )
-    descriptor_map = fields.List(
+    descriptor_maps = fields.List(
         fields.Nested(InputDescriptorMappingSchema),
         required=False,
         data_key="descriptor_map",
     )
+
+
+# Union of str or dict
+class CustomValueField(fields.Field):
+    def _deserialize(self, value, attr, data, **kwargs):
+        if isinstance(value, str) or isinstance(value, dict):
+            return value
+        else:
+            raise ValidationError('Field should be str or dict')
 
 
 class VerifiablePresentation:
@@ -1113,24 +1036,22 @@ class VerifiablePresentation:
         self,
         *,
         _id: str = None,
-        context: Sequence[str] = None,
-        custom_context: Sequence[dict] = None,
-        _types: Sequence[str] = None,
+        contexts: Sequence[Union[str, dict]] = None,
+        types: Sequence[str] = None,
         credentials: Sequence[dict] = None,
         holder: str = None,
         proofs: Sequence[dict] = None,
-        custom_field: dict = None,
+        tags: dict = None,
         presentation_submission: PresentationSubmission = None,
     ):
         """Initialize VerifiablePresentation."""
         self._id = _id
-        self.context = context
-        self.custom_context = custom_context
-        self._types = _types
+        self.contexts = contexts
+        self.types = types
         self.credentials = credentials
         self.holder = holder
         self.proofs = proofs
-        self.custom_field = custom_field
+        self.tags = tags
         self.presentation_submission = presentation_submission
 
 
@@ -1148,20 +1069,11 @@ class VerifiablePresentationSchema(BaseSchema):
         **UUID4,
         data_key="id",
     )
-    context = fields.List(
-        fields.Str(
-            description="Context",
-            required=False
-        ),
+    contexts = fields.List(
+        CustomValueField(),
         data_key="@context",
     )
-    custom_context = fields.List(
-        fields.Dict(
-            description="CustomContext",
-            required=False
-        ),
-    )
-    _types = fields.List(
+    types = fields.List(
         fields.Str(
             description="Types",
             required=False
@@ -1182,13 +1094,13 @@ class VerifiablePresentationSchema(BaseSchema):
     )
     proofs = fields.List(
         fields.Dict(
-            description="Proof",
+            description="Proofs",
             required=False
         ),
         data_key="proof",
     )
-    custom_field = fields.Dict(
-        description="CustomField",
+    tags = fields.Dict(
+        description="Tags",
         required=False
     )
     presentation_submission = fields.Nested(PresentationSubmissionSchema, data_key="presentation_submission")
